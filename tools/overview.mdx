@@ -1,46 +1,51 @@
 ---
-title: "My Tools: Small, Focused Utilities I Built for Myself"
-sidebarTitle: "Overview"
-description: "An overview of self-built tools by MX Quan — small, focused utilities created to solve real personal problems, now shared freely for anyone to use."
+title: "工具总览"
+sidebarTitle: "总览"
+description: "Word 排版与 MathType 公式批处理 skill：安装方式、适用场景，以及相关技术博客入口。"
 ---
 
-Most of the tools here started as a five-minute frustration — some repetitive task I kept doing by hand that finally annoyed me enough to automate. Rather than reaching for a bloated web app or installing yet another dependency, I wrote something small, specific, and mine. Over time these little scripts accumulated, and it seemed wasteful to keep them buried in a local folder. So they live here now, polished just enough to be useful to someone other than me.
+本站工具以 **Agent Skill** 形式分发，不是网页里点一点的小工具。你需要把 skill 装进 Cursor / Claude / Codex 等环境，或下载 zip 后在本机跑脚本。
 
-## Philosophy
-
-Every tool on this site exists because I had an actual problem to solve — not because it seemed like a cool project. I try to keep each one focused on a single job: if it starts growing extra menus and settings, that's usually a sign it wants to be two tools instead of one. I also write the code so a stranger can read and extend it, because future-me is basically a stranger. And finally, if a standard library already does the job well, I use it rather than reinventing it — simplicity beats cleverness every time.
-
-## Agent Skills（推荐先看）
-
-工程向的 Word / MathType 自动化以 **skill 包**形式分发：可一键装进 AI Agent，也可下载 zip 本机跑脚本。
+## Skills
 
 <CardGroup cols={2}>
-  <Card title="安装 Skills" href="/tools/skills" icon="download">
-    `npx skills add` 或下载完整 zip，选一种方式即可开始用。
+  <Card title="安装与使用" href="/tools/skills" icon="download">
+    `npx skills add` 或下载完整 zip。
   </Card>
   <Card title="word-format" href="/blog/word-format-skill" icon="file-word">
-    按模板统一双栏习题册版式，保留 MathType OLE。
+    双栏习题册版式迁移，保留可编辑 MathType OLE。
   </Card>
   <Card title="mathtype-re-render" href="/blog/mathtype-re-render-skill" icon="square-root-variable">
-    把 `.eqp` 写入公式二进制并重渲染 Word 预览。
+    `.eqp` → MTEF 修补 → WMF 重渲染 → 几何同步。
   </Card>
 </CardGroup>
 
-## Browser Tools
+## 什么时候用哪个
+
+| 你要做的事 | 用哪个 |
+| --- | --- |
+| 统一页面、分栏、题型样式、解析加粗 | [word-format](/blog/word-format-skill) |
+| 统一公式字号、间距、字体，并刷新显示 | [mathtype-re-render](/blog/mathtype-re-render-skill) |
+| 两者都要 | 先版式后公式，或按文档状态分步跑 |
+
+<Warning>
+  不要用 HTML / `python-docx` 去「重建」含大量 `Equation.DSMT4` 的整篇习题册。公式会退化成图片，看起来还「正常」。
+</Warning>
+
+## 技术文章
 
 <CardGroup cols={2}>
-  <Card title="Text Processor" href="/tools/tool-1" icon="file-lines">
-    Transform and clean text with a set of simple, composable operations.
+  <Card title="排版重构实录" href="/blog/word-format-refactor" icon="book">
+    从 HTML 剪贴板方案到 OOXML 定点修改。
   </Card>
-  <Card title="Data Formatter" href="/tools/tool-2" icon="table">
-    Convert, format, and validate data between common formats like JSON, CSV, and YAML.
+  <Card title="Re-render 深潜" href="/blog/mathtype-re-render" icon="microscope">
+    三层数据模型与可审计流水线。
+  </Card>
+  <Card title="官方批量格式化" href="/blog/mathtype-batch-formatting" icon="clock">
+    MathType 自带批量格式化为什么慢。
   </Card>
 </CardGroup>
 
-## Getting Started
-
-浏览器小工具见 [Getting Started](/tools/getting-started)。Word / MathType skill 见 [Skills：安装与使用](/tools/skills)。
-
 <Note>
-  Skills 与脚本源码在 [GitHub 仓库](https://github.com/LIziak112/mintlify) 的 `skills/` 目录；下载包在 `/downloads/`。
+  源码在 [GitHub](https://github.com/LIziak112/mintlify) 的 `skills/`；zip 在 [`/downloads/`](/tools/skills)。
 </Note>

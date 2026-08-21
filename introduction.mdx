@@ -1,5 +1,39 @@
 ---
-title: "About Me — Who Is MX Quan and What Drives This Blog?"
-sidebarTitle: "Introduction"
-description: "Meet MX Quan: a thinker, writer, and builder who shares reflections on learning, creativity, and technology alongside practical self-made tools."
+title: "关于本站"
+sidebarTitle: "关于"
+description: "MX Quan 的 Word / MathType 自动化笔记：为什么写这些 skill，以及如何阅读本站文档。"
 ---
+
+本站不再保留通用英文随笔模板，只围绕真实工作里反复出现的两类问题：
+
+1. **Word 双栏习题册**要统一版式，又不能把 MathType 公式弄成图片  
+2. **MathType 公式**要批量套用 `.eqp`，还要让 Word 里看见的预览一起更新  
+
+对应产物是两个可安装 skill，以及若干把设计取舍写清楚的中文技术文。
+
+## 你会在这里找到什么
+
+<CardGroup cols={2}>
+  <Card title="Skills 安装" icon="download" href="/tools/skills" type="tip">
+    Agent 一键安装与 zip 下载入口。
+  </Card>
+  <Card title="使用说明" icon="book" href="/blog/word-format-skill" type="note">
+    每个 skill 的适用边界、提示词和命令。
+  </Card>
+  <Card title="工程实录" icon="screwdriver-wrench" href="/blog/word-format-refactor" type="info">
+    为什么从 HTML 重建改成 OOXML 定点修改。
+  </Card>
+  <Card title="公式深潜" icon="atom" href="/blog/mathtype-re-render" type="check">
+    MTEF、WMF、几何三层如何分别验收。
+  </Card>
+</CardGroup>
+
+## 怎么读
+
+- 只想马上用：看 [工具总览](/tools/overview) → [安装页](/tools/skills)  
+- 想理解失败模式：先读重构实录与 Re-render 技术文，再回头看脚本门槛  
+- 源码与脚本：仓库 `skills/`，下载包在 `/downloads/`
+
+<Note>
+  这些流水线依赖 Windows、桌面版 Word，以及（公式侧）已注册的 MathType 32 位 OLE。它们不是浏览器小工具。
+</Note>

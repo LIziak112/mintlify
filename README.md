@@ -1,55 +1,38 @@
-# Mintlify Starter Kit
+# MX Quan — Word / MathType Skills 站点
 
-Use the starter kit to get your docs deployed and ready to customize.
+基于 [Mintlify](https://mintlify.com) 的中文技术站点，内容围绕：
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+- **word-format**：双栏习题册版式迁移（保留 MathType OLE）
+- **mathtype-re-render**：`.eqp` → MTEF 修补 → WMF 重渲染 → 几何同步
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+## 安装 Skills
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
-
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
-
-```bash
-npx skills add https://mintlify.com/docs
+```powershell
+npx skills add LIziak112/mintlify -s word-format
+npx skills add LIziak112/mintlify -s mathtype-re-render
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
+或下载 `downloads/*.zip`。说明见站点内 [Skills：安装与使用](./tools/skills.mdx)。
 
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+## 本地预览
 
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
+```powershell
 npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
 mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+## 仓库结构
 
-## Publishing changes
+```text
+blog/           中文技术博客
+tools/          Skills 总览与安装页
+skills/         完整 skill 源码（给 Agent / 脚本）
+downloads/      可下载 zip 包
+docs.json       导航与站点配置
+```
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+写文档时可安装 Mintlify 官方 skill：
 
-## Need help?
-
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+```powershell
+npx skills add https://mintlify.com/docs
+```

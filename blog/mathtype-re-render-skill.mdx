@@ -6,6 +6,19 @@ description: "在不丢失可编辑性的前提下，审计并修补 MathType MT
 
 一句话：把 MathType 的格式配置文件（`.eqp`）应用到 DOCX 里所有**可编辑公式对象**的二进制数据，并重新渲染预览图，让 Word 显示与二进制配置一致。
 
+<CardGroup cols={2}>
+  <Card title="安装入口" icon="download" href="/tools/skills">
+    Agent 一键安装或下载 zip。
+  </Card>
+  <Card title="技术深潜" icon="microscope" href="/blog/mathtype-re-render">
+    MTEF / WMF / 几何三层如何分别验收。
+  </Card>
+</CardGroup>
+
+<Warning>
+  MTEF 已被修改 ≠ Word 显示已更新。两层必须分开验收。
+</Warning>
+
 完整链路：
 
 ```text
@@ -14,9 +27,7 @@ EQP 配置 -> MTEF 二进制审计/修补 -> 二进制完整性证明
          -> WMF 替换 + Word 几何同步 -> 最终审计/渲染 QA
 ```
 
-关键认知：**MTEF 已被修改 ≠ Word 显示已更新**。这两层分开验收。更完整的原理与实测数据见：[MathType Re-render 技术深潜](/blog/mathtype-re-render)。
-
-若你要处理的是双栏习题册的**版式**（分栏、样式、页眉），请用 [word-format](/blog/word-format-skill)；本 skill 只处理公式配置与预览。
+更完整的原理与实测数据见：[MathType Re-render 技术深潜](/blog/mathtype-re-render)。若你要处理的是双栏习题册的**版式**（分栏、样式、页眉），请用 [word-format](/blog/word-format-skill)；本 skill 只处理公式配置与预览。
 
 ## 怎么用
 

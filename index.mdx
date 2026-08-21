@@ -1,30 +1,42 @@
 ---
-title: "MX Quan — Essays on Thinking, Learning & Self-Built Tools"
-description: "Welcome to MX Quan's personal blog — a space for original essays on thinking and technology, plus practical self-built tools to explore."
+title: "MX Quan — Word / MathType 自动化笔记与 Skills"
+description: "围绕双栏习题册排版与 MathType 公式批处理：技术博客、可安装 skill，以及可下载的完整脚本包。"
 ---
 
-Welcome to my on my mind, what I've been reading, and what I've been making.
+这里记录两件事：怎么在**不破坏可编辑公式**的前提下改 Word 版式，以及怎么把 `.eqp` **真正写进** MathType 公式并刷新预览。
 
 <CardGroup cols={2}>
-  <Card title="About Me" icon="pen-nib" href="/introduction">
-    Learn who I am, what drives me to write, and what you can expect to find here.
+  <Card title="安装 Skills" icon="download" href="/tools/skills">
+    用 `npx skills add` 装进 Agent，或下载 zip 本机跑脚本。
   </Card>
 
-  <Card title="Thoughts & Essays" icon="lightbulb" href="/blog/thinking-about-thinking">
-    Original essays on thinking, learning, creativity, and the ideas I keep returning to.
+  <Card title="word-format" icon="file-word" href="/blog/word-format-skill">
+    按模板统一双栏习题册版式，保留 MathType OLE。
   </Card>
 
-  <Card title="Reading Notes" icon="book" href="/blog/reading-notes-overview">
-    Notes and reflections from books, articles, and ideas that have shaped my thinking.
+  <Card title="mathtype-re-render" icon="square-root-variable" href="/blog/mathtype-re-render-skill">
+    审计并修补 MTEF，重渲染 WMF，同步页面几何。
   </Card>
 
-  <Card title="Self-Built Tools" icon="wrench" href="/tools/overview">
-    Practical utility tools I've built for myself — and now sharing with anyone who finds them useful.
-  </Card>
-
-  <Card title="Agent Skills" icon="download" href="/tools/skills">
-    Install word-format and mathtype-re-render with one command, or download the full zip packages.
+  <Card title="关于本站" icon="pen-nib" href="/introduction">
+    写这些工具的原因，以及文档怎么读。
   </Card>
 </CardGroup>
 
-Take your time, follow whatever catches your eye, and feel free to wander — there's no prescribed order here.
+## 推荐阅读顺序
+
+<Steps>
+  <Step title="先装 skill">
+    打开 [Skills：安装与使用](/tools/skills)，选 Agent 安装或下载 zip。
+  </Step>
+  <Step title="看对应介绍页">
+    [word-format](/blog/word-format-skill) 管版式；[mathtype-re-render](/blog/mathtype-re-render-skill) 管公式配置与预览。
+  </Step>
+  <Step title="需要原理时再读深潜">
+    [排版重构实录](/blog/word-format-refactor)、[Re-render 技术文](/blog/mathtype-re-render)、[官方批量格式化为何慢](/blog/mathtype-batch-formatting)。
+  </Step>
+</Steps>
+
+<Tip>
+  版式迁移和公式配置是两条流水线。先分清你要改的是「栏/样式/分页」，还是「字号/间距/预览」，再选 skill。
+</Tip>

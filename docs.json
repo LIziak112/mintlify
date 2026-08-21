@@ -11,54 +11,38 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Blog",
+        "tab": "博客",
         "groups": [
           {
-            "group": "Welcome",
+            "group": "欢迎",
             "pages": ["introduction"]
           },
           {
-            "group": "Essays",
+            "group": "Word 排版",
             "pages": [
-              "blog/thinking-about-thinking",
-              "blog/on-learning",
-              "blog/on-creativity",
-              "blog/on-technology"
+              "blog/word-format-skill",
+              "blog/word-format-refactor"
             ]
           },
           {
-            "group": "Tools & Engineering",
+            "group": "MathType",
             "pages": [
-              "blog/word-format-skill",
-              "blog/word-format-refactor",
               "blog/mathtype-re-render-skill",
               "blog/mathtype-re-render",
               "blog/mathtype-batch-formatting"
-            ]
-          },
-          {
-            "group": "Reading Notes",
-            "pages": [
-              "blog/reading-notes-overview",
-              "blog/book-notes"
             ]
           }
         ]
       },
       {
-        "tab": "Tools",
+        "tab": "工具",
         "groups": [
           {
-            "group": "Overview",
-            "pages": ["tools/overview", "tools/skills"]
-          },
-          {
-            "group": "Browser Tools",
-            "pages": ["tools/tool-1", "tools/tool-2"]
-          },
-          {
-            "group": "How To Use",
-            "pages": ["tools/getting-started", "tools/faq"]
+            "group": "Skills",
+            "pages": [
+              "tools/overview",
+              "tools/skills"
+            ]
           }
         ]
       }
@@ -67,13 +51,13 @@
   "navbar": {
     "primary": {
       "type": "button",
-      "label": "About Me",
+      "label": "关于",
       "href": "/introduction"
     }
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/mx-quan"
+      "github": "https://github.com/LIziak112/mintlify"
     }
   }
 }
