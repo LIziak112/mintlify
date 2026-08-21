@@ -1,0 +1,116 @@
+---
+title: "Skills：安装与使用"
+sidebarTitle: "Skills"
+description: "获取 word-format 与 mathtype-re-render：一键安装到 AI Agent，或下载完整 zip 在本机运行脚本。"
+---
+
+这两个 skill 都放在本站仓库的 `skills/` 目录里，并提供可下载的完整包。推荐优先装进 Agent；需要离线或自己跑流水线时，再下 zip。
+
+<CardGroup cols={2}>
+  <Card title="word-format" icon="file-word" href="/blog/word-format-skill">
+    按 Word 模板统一双栏习题册版式，保留 MathType OLE。
+  </Card>
+  <Card title="mathtype-re-render" icon="square-root-variable" href="/blog/mathtype-re-render-skill">
+    把 `.eqp` 写进公式二进制并重渲染预览。
+  </Card>
+</CardGroup>
+
+## 方式一：安装到 AI Agent（推荐）
+
+需要本机已安装 [Node.js](https://nodejs.org/)，以及 Cursor / Claude Code / Codex 等支持 skills 的 Agent。
+
+安装单个 skill：
+
+```powershell
+npx skills add LIziak112/mintlify -s word-format
+npx skills add LIziak112/mintlify -s mathtype-re-render
+```
+
+或指定仓库内路径：
+
+```powershell
+npx skills add https://github.com/LIziak112/mintlify/tree/main/skills/word-format
+npx skills add https://github.com/LIziak112/mintlify/tree/main/skills/mathtype-re-render
+```
+
+本地已经 clone 了本仓库时：
+
+```powershell
+npx skills add .\skills\word-format
+npx skills add .\skills\mathtype-re-render
+```
+
+装好后，用自然语言调用即可，例如：
+
+```text
+调用 word-format skill，以模板.docx 为版式，处理待排版文件夹，结果另存，不要覆盖源文件；跑完审计并逐页检查。
+```
+
+```text
+调用 mathtype-re-render skill，用目标.eqp 处理源.docx，输出新文件，跑完整流水线并做全页视觉检查。
+```
+
+<Tip>
+  站点部署到 Mintlify 后，也可以尝试用文档站 URL 发现 skill：`npx skills add https://你的文档站地址`。带完整脚本的工程 skill，仍以 GitHub / zip 为准最稳妥。
+</Tip>
+
+## 方式二：下载完整包（本机脚本）
+
+适合不想装 Agent、或要在流水线里直接跑 PowerShell / Python 的情况。
+
+| Skill | 下载 | 解压后入口 |
+| --- | --- | --- |
+| word-format | [word-format.zip](/downloads/word-format.zip) | `scripts/`（如 `verify_env.ps1`、`apply_exercise_template_ooxml.ps1`） |
+| mathtype-re-render | [mathtype-re-render.zip](/downloads/mathtype-re-render.zip) | `scripts/run_full_pipeline.py` |
+
+解压后目录结构应类似：
+
+```text
+word-format/
+├─ SKILL.md
+├─ references/
+└─ scripts/
+
+mathtype-re-render/
+├─ SKILL.md
+├─ README.md
+├─ assets/presets/
+├─ references/
+└─ scripts/
+```
+
+也可以直接从 GitHub 浏览源码：
+
+- [skills/word-format](https://github.com/LIziak112/mintlify/tree/main/skills/word-format)
+- [skills/mathtype-re-render](https://github.com/LIziak112/mintlify/tree/main/skills/mathtype-re-render)
+
+## 怎么选
+
+| 你的目标 | 建议 |
+| --- | --- |
+| 让 Agent 自动选脚本、跑审计、改提示词 | **方式一：npx skills add** |
+| 在固定机器上批处理、CI、或自己点脚本 | **方式二：下载 zip** |
+| 两者都要 | 仓库里保留 `skills/`，再额外提供 zip（当前站点就是这样） |
+
+## 环境前提（摘要）
+
+**word-format**
+
+- Windows + Word 桌面版（COM）
+- Chrome 或 Edge（HTML 续写路径）
+- PowerShell 5.1
+
+**mathtype-re-render**
+
+- Windows + 已注册的 MathType 32 位 OLE
+- Python
+- 输入为可编辑 `Equation.DSMT4` 的 `.docx` + `.eqp`
+
+更细的边界与验收，见各自介绍页与技术文。
+
+## 相关文章
+
+- [word-format skill 介绍](/blog/word-format-skill)
+- [Word 自动排版重构实录](/blog/word-format-refactor)
+- [mathtype-re-render skill 介绍](/blog/mathtype-re-render-skill)
+- [MathType Re-render 技术深潜](/blog/mathtype-re-render)

@@ -1,0 +1,124 @@
+---
+title: "word-format：按 Word 模板统一习题册版式"
+sidebarTitle: "word-format skill"
+description: "面向 Windows 数学双栏习题册的排版 skill：优先用 OOXML 保留 MathType OLE，必要时用 HTML 续写；并配套结构审计与全页渲染验收。"
+---
+
+`word-format` 用来参照一份已经排好版的 Word 文档，统一其他 `.docx` 的版式。它主要服务于 Windows 下的数学双栏习题册：页面尺寸、页边距、分栏、段落样式、题型与母题位置、正文缩进、解析格式等，并尽量保留源文档中的 MathType 公式、图片、二维码和其他嵌入对象。
+
+如果你想了解它为什么从 HTML 重建改成 OOXML 定点修改，可以先读重构实录：[Word 自动排版：一次复杂习题册排版系统的重构实录](/blog/word-format-refactor)。
+
+## 怎么用
+
+完整安装方式（Agent 一键安装 / 下载 zip）见：[Skills：安装与使用](/tools/skills)。
+
+装好后，把参考模板、待处理文件或文件夹、输出位置告诉 Agent 即可，不必自己逐条跑脚本。
+
+```powershell
+npx skills add LIziak112/mintlify -s word-format
+```
+
+推荐提示词：
+
+```text
+调用 word-format skill。
+
+以“C:\路径\参考模板.docx”为版式模板，处理“C:\路径\待处理文件夹”中的所有 .docx 文件，结果另存到“C:\路径\输出文件夹”。
+
+请先检查模板和源文件，再选择 skill 中合适的处理方式。源文件包含 MathType/OLE 公式、图片和二维码，必须保留原对象，不要把整篇文档通过 HTML 或 python-docx 重建。不要覆盖源文件。处理后运行自动审计，并逐页渲染检查版式、分栏、公式和二维码；发现问题时修正后重新验收。
+```
+
+只处理单个文件时，把「待处理文件夹」换成具体路径即可。若还要统一 MathType 公式预设，可配合 [mathtype-re-render](/blog/mathtype-re-render-skill) 使用。
+
+离线包：[word-format.zip](/downloads/word-format.zip)
+
+## 适合处理什么
+
+- 以一份已排版 `.docx` 为模板，统一同类习题册的页面设置和段落样式
+- 修复双栏习题册中的题型起始位置、分栏、空段、正文缩进和解析加粗等问题
+- 在保留源文档内容的前提下，保留已有 MathType/OLE、图片、二维码和嵌入对象
+- 按参考文档的段落格式生成或追加少量新内容
+- 批量处理结构一致、标题命名规则一致的习题册文件
+
+## 两条路线
+
+Agent 会按任务选择路径，而不是一套万能转换。
+
+| 场景 | 推荐路线 | 原因 |
+| --- | --- | --- |
+| 已有双栏习题册统一版式 | OOXML 定点修改 | 保留源文档的 OLE、媒体、关系和复杂结构 |
+| 在参考文档末尾追加少量文字或表格 | Filtered HTML + 续写 | 复用段落视觉格式更直接 |
+| 用 HTML 重建含 MathType 的整篇文档 | 明确拒绝 | `Equation.DSMT4` 会退化为图片 |
+| 修改 MathType 内部字号、间距和字体 | [mathtype-re-render](/blog/mathtype-re-render-skill) | 属于 MTEF 与预览重渲染，不是版式迁移 |
+
+简单说：已有习题册以「保留原文档容器、只改版式」为主；新增内容以「复用参考段落样式、再粘贴回 Word」为主。两条路径输出后都要自动检查，并逐页目检。
+
+## 习题册 OOXML 主线（首选）
+
+对已有双栏习题册，不要把整篇文档转成 HTML 再粘贴。容器级脚本直接复制源 ZIP 部件，主要改 `word/document.xml` 与 `word/styles.xml`，因此可以保留 MathType/OLE、二维码、图片和关系。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\inspect_template.ps1 `
+  -InputDocx 'C:\path\M1-template.docx'
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\apply_exercise_template_ooxml.ps1 `
+  -TemplateDocx 'C:\path\M1-template.docx' `
+  -SourceDocx 'C:\path\M4-source.docx' `
+  -OutputDocx 'C:\path\M4-formatted.docx'
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\audit_exercise_template_ooxml.ps1 `
+  -Docx 'C:\path\M4-formatted.docx' `
+  -ReferenceDocx 'C:\path\M4-source.docx'
+```
+
+完成后必须跑审计，再用自带渲染入口生成 PDF、逐页 PNG、检查页和 JSON 报告：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\render_docx_for_review.ps1 `
+  -InputDocx 'C:\path\formatted.docx' `
+  -OutputDirectory 'C:\path\formatted-render'
+```
+
+`Status=PASS` 只表示 PDF 页数、PNG 数量和非空检查通过。仍须打开 `review.html` 或逐张查看 PNG，检查栏起始、二维码、公式完整性、重叠、截断和空白页。不要只抽查第一页。
+
+## HTML 续写路径（适合追加内容）
+
+续写模式先复制参考 `.docx`，再把新内容粘到副本末尾，因此页面设置、样式表、主题和页眉页脚仍由参考文档承载。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_env.ps1
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\docx_to_html.ps1 `
+  -InputDocx 'C:\path\reference.docx'
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\render_and_paste.ps1 `
+  -AppendTo 'C:\path\reference.docx' `
+  -InputHtml 'C:\path\append.html' `
+  -OutputDocx 'C:\path\final.docx'
+```
+
+编辑导出的 HTML 时：只替换文字节点；保留原有标签与 inline style；字号用 `pt` 不用 `px`；不要把含 `Equation.DSMT4` 的模板送进新建模式。脚本会在发现公式标记时停止，避免静默把公式变成 PNG。
+
+## 环境要求
+
+- Windows 10/11
+- Microsoft Word 桌面版（支持 COM；网页版不支持）
+- Google Chrome 或 Microsoft Edge（HTML 路径）
+- Windows PowerShell 5.1
+- 可交互的桌面会话
+
+逐页渲染使用 Windows 自带 PDF 渲染 API，不依赖 Python、Poppler 或 LibreOffice。
+
+## 使用边界
+
+- 当前 OOXML 规则面向「章节、题型、母题、子题、解析、检测题、反馈通道」一类习题册结构，不是任意 Word 模板的一键排版器
+- 能保留已有 MathType/OLE，但不能凭空生成新的可编辑公式，也不改写公式数学内容
+- 通过 HTML 粘贴的新公式通常只是图片
+- 自动审计不能替代逐页目检
+- 默认输出到新文件；未经明确授权不要覆盖模板或源文件
+
+## 相关阅读
+
+- [Word 自动排版重构实录](/blog/word-format-refactor)：为什么主线改成 OOXML
+- [mathtype-re-render skill](/blog/mathtype-re-render-skill)：统一公式字号、间距与预览
+- [MathType Re-render 技术深潜](/blog/mathtype-re-render)：MTEF / WMF / 几何三层验收

@@ -16,6 +16,32 @@
           {
             "group": "Welcome",
             "pages": ["introduction"]
+          },
+          {
+            "group": "Essays",
+            "pages": [
+              "blog/thinking-about-thinking",
+              "blog/on-learning",
+              "blog/on-creativity",
+              "blog/on-technology"
+            ]
+          },
+          {
+            "group": "Tools & Engineering",
+            "pages": [
+              "blog/word-format-skill",
+              "blog/word-format-refactor",
+              "blog/mathtype-re-render-skill",
+              "blog/mathtype-re-render",
+              "blog/mathtype-batch-formatting"
+            ]
+          },
+          {
+            "group": "Reading Notes",
+            "pages": [
+              "blog/reading-notes-overview",
+              "blog/book-notes"
+            ]
           }
         ]
       },
@@ -23,19 +49,16 @@
         "tab": "Tools",
         "groups": [
           {
-            "group": "My Tools",
-            "pages": [
-              "tools/overview",
-              "tools/tool-1",
-              "tools/tool-2"
-            ]
+            "group": "Overview",
+            "pages": ["tools/overview", "tools/skills"]
+          },
+          {
+            "group": "Browser Tools",
+            "pages": ["tools/tool-1", "tools/tool-2"]
           },
           {
             "group": "How To Use",
-            "pages": [
-              "tools/getting-started",
-              "tools/faq"
-            ]
+            "pages": ["tools/getting-started", "tools/faq"]
           }
         ]
       }

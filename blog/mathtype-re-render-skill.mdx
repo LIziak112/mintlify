@@ -1,0 +1,114 @@
+---
+title: "mathtype-re-render：把 .eqp 真正应用到 Word 公式"
+sidebarTitle: "mathtype-re-render skill"
+description: "在不丢失可编辑性的前提下，审计并修补 MathType MTEF 配置，用 32 位 OLE 重渲染 WMF 预览，并同步 Word 几何。适合批量规范公式字号与间距。"
+---
+
+一句话：把 MathType 的格式配置文件（`.eqp`）应用到 DOCX 里所有**可编辑公式对象**的二进制数据，并重新渲染预览图，让 Word 显示与二进制配置一致。
+
+完整链路：
+
+```text
+EQP 配置 -> MTEF 二进制审计/修补 -> 二进制完整性证明
+         -> 唯一 WMF 映射 -> x86 OLE 渲染
+         -> WMF 替换 + Word 几何同步 -> 最终审计/渲染 QA
+```
+
+关键认知：**MTEF 已被修改 ≠ Word 显示已更新**。这两层分开验收。更完整的原理与实测数据见：[MathType Re-render 技术深潜](/blog/mathtype-re-render)。
+
+若你要处理的是双栏习题册的**版式**（分栏、样式、页眉），请用 [word-format](/blog/word-format-skill)；本 skill 只处理公式配置与预览。
+
+## 怎么用
+
+完整安装方式（Agent 一键安装 / 下载 zip）见：[Skills：安装与使用](/tools/skills)。
+
+```powershell
+npx skills add LIziak112/mintlify -s mathtype-re-render
+```
+
+推荐提示词：
+
+```text
+调用 mathtype-re-render skill。
+
+使用“C:\路径\目标.eqp”作为公式预设，处理“C:\路径\源文档.docx”，结果另存为新的 .docx。
+不要覆盖源文件。跑完整流水线：审计、修补、完整性证明、预览重渲染、几何同步，并做全页视觉检查。
+```
+
+离线包：[mathtype-re-render.zip](/downloads/mathtype-re-render.zip)
+
+也可以直接跑一键入口（在 skill 的 `scripts/` 目录下）：
+
+```powershell
+python .\run_full_pipeline.py target.eqp source.docx refreshed.docx `
+  --work-dir .\work\job-name `
+  --cache .\cache `
+  --batch-size 25
+```
+
+任一门槛失败即停止。成功后再渲染整份文档并逐页检查——结构成功不等于视觉合格。只有明确授权时才加 `--overwrite`。
+
+## 能解决什么
+
+| 问题 | 处理方式 |
+| --- | --- |
+| 公式字号/间距与目标 `.eqp` 不一致 | 保守修补 `Equation Native` 中的 `EQN_PREFS`（38 值块），必要时同步已验证字体记录 |
+| 改完配置后 Word 仍显示旧外观 | 用 32 位 STA Worker 重新渲染 OLE，生成 placeable WMF 替换预览 |
+| 多个公式共享同一张预览，互相覆盖 | 拆分共享预览关系，保证对象与预览一一对应 |
+| 显示尺寸拉伸、压缩、裁剪、重叠 | 按 WMF 物理尺寸同步 `dxaOrig/dyaOrig` 与 VML 宽高，保留基线 |
+| 需要证明「改了哪、没动哪」 | 非目标 DOCX 部件与非 `Equation Native` 的 OLE 流逐字节不变，ZIP CRC 通过 |
+
+内置预设见 `assets/presets/`：教辅格式 11.7pm、正文 11.9pt、一级标题 16pm、二级标题 13pm。
+
+## 不适用
+
+- 静态图片公式（PNG/EMF）
+- Office 原生 OMML 公式
+- **改写公式数学内容**——只改配置和显示
+- 非 Windows，或未注册 MathType 32 位 OLE 服务端
+- 未知字体映射——会停下，先做对照样本，不猜测
+
+## 环境要求
+
+- Windows，已安装并注册 MathType 32 位 OLE server
+- Python（跑流水线脚本）
+- 输入：含可编辑 `Equation.DSMT4` 的 `.docx` + 标准 `.eqp`（8 项 Sizes + 30 项 Spacing）
+- 输出：始终写新 DOCX；禁止源路径等于输出路径
+
+本流水线**不需要**为公式渲染打开 Word UI；几何与包结构在 DOCX 层面完成，最后再用文档渲染做视觉 QA。
+
+## 七道门槛（概览）
+
+1. **预检**：对照 `.eqp` 枚举所有 owner part 中的公式偏差（退出码 `2` = 有偏差，待修时属预期）
+2. **修补**：只改可解析的 `EQN_PREFS` / 已验证字体记录，并同步长度与 mini-stream 元数据
+3. **证明**：偏差归零；非目标部件与 OLE 流不变
+4. **映射**：按 OOXML 关系定位 OLE↔WMF；必要时拆分共享预览
+5. **重渲染**：构建/调用 x86 `OlePreviewRenderer`，按缓存批量刷新 WMF
+6. **几何审计**：WMF、VML、`dxaOrig/dyaOrig` 一致，预览阶段 OLE 哈希不变
+7. **全页 QA**：检查漏公式、旧框、变形、裁剪、重叠、基线漂移与异常分页
+
+最短安全变体：
+
+- 配置错且预览旧 → 跑全流程
+- 配置已修补并验证 → 从映射 + 重渲染开始，**不要再补一次**
+- 仅预览陈旧、配置已合规 → 跳过修补，仍要映射、拆分、刷新、审计
+- 渲染器不可用 → 诊断 x86 构建与 MathType 注册；**绝不把可编辑公式静默换成 PNG**
+
+## 交付时要报告什么
+
+- 使用的 EQP
+- 公式对象数与唯一公式数
+- MTEF 已改 / 未改数量
+- 共享预览拆分数量
+- 新渲染数与缓存命中数
+- 几何审计结果
+- 预览阶段 OLE 保持结果
+- 全页视觉 QA 状态
+
+工作目录中的各阶段 JSON 报告应保留，便于复现。
+
+## 相关阅读
+
+- [MathType Re-render 技术深潜](/blog/mathtype-re-render)：三层数据模型与 5758 公式实测
+- [MathType 批量格式化为何慢](/blog/mathtype-batch-formatting)：官方批量格式化的通信路径
+- [word-format skill](/blog/word-format-skill)：习题册版式迁移（与公式配置互补）

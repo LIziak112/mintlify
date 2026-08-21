@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mathtype Re-render"
+  short_description: "Patch MathType MTEF binaries and regenerate editable previews"
+  default_prompt: "Use $mathtype-re-render to apply an EQP profile to every editable Equation.DSMT4 object and regenerate all Word previews safely."

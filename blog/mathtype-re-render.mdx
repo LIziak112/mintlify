@@ -1,0 +1,394 @@
+---
+title: "MathType Re-render：绕过 MathType 批量格式化的配置批处理"
+sidebarTitle: "MathType Re-render"
+description: "从 MTEF 二进制修补到 OLE 预览重渲染：一条可验证的 DOCX 公式修复流水线。覆盖审计、保守修补、完整性证明、WMF 重渲染与几何同步。"
+---
+
+## 问题前瞻
+
+工作中遇到要对接出版社，只能使用*Microsoft Word* 与Mathtype。
+
+为什么要绕过Mathtype批量格式化功能？
+
+首先就是微软office太卡，普通电脑运行压力大。其次Mathtype过于古早，处理逻辑较为呆板。Mathtype自带批量格式化处理公式的流程是先在word里面定位到公式，删除该公式，插入一个新的符合配置的公式。完成后继续重复此流程。并不会检查公式配置是否符合，也不支持多线程、多文档同时进行。
+
+## 从 MTEF 二进制修补到 OLE 预览重渲染：一条可验证的 DOCX 公式修复流水线
+
+批量修改 Word 里的 MathType 公式，最容易产生一种误判：脚本已经把字号和间距写进公式，审计也显示配置正确，但重新打开文档，屏幕上的公式几乎没有变化。
+
+这通常不是修补失败，而是只解决了问题的一半。
+
+一枚传统 MathType 公式在 DOCX 中至少跨越三个彼此独立的层次：可编辑的 MTEF 数据、Word 用于显示的 WMF 预览，以及决定预览如何摆放的对象几何。修改任意一层，都不会自动保证另外两层同步。
+
+因此，一个可靠的批处理方案不能止于“改到了某些字节”。它必须回答三个问题：
+
+1. 公式内部的配置是否已经变成目标值？
+2. 除目标配置外，文档和 OLE 中的其他数据是否保持不变？
+3. Word 当前显示的预览及其尺寸，是否与修改后的公式一致？
+
+本文介绍的 `mathtype-re-render` 流水线，正是围绕这三个问题设计的。它处理可编辑的 `Equation.DSMT4` 对象，以 `.eqp` 为目标配置，完成二进制审计、保守修补、完整性证明、OLE 重渲染、几何同步和整页视觉检查。
+
+在一份包含 5,758 个公式对象的真实文档上，这条流水线完成了全部预览替换和几何同步；5,326 份唯一公式数据中，5,208 份实际渲染、118 份命中缓存，串行渲染耗时 445.01 秒。更重要的是，每个阶段都留下了可以复核的证据。
+
+---
+
+## 先建立正确的心智模型
+
+`.docx` 本质上是一个 ZIP 包。对于传统 MathType OLE 公式，相关数据分散在多个部件中：
+
+```text
+DOCX
+├─ word/embeddings/oleObject*.bin
+│  └─ Equation Native stream
+│     └─ MTEF：公式内容与偏好配置
+├─ word/media/*.wmf
+│  └─ Word 显示的缓存预览
+├─ word/*.xml
+│  └─ VML、dxaOrig/dyaOrig、基线位置等几何信息
+└─ word/_rels/*.rels
+   └─ OLE 对象、预览和 XML 部件之间的关系
+```
+
+可以把它们理解为三个层次，但不要让比喻取代技术事实：
+
+| 层次 | 实际数据 | 负责什么 | 修改后的验收条件 |
+| --- | --- | --- | --- |
+| 可编辑数据 | OLE 中的 `Equation Native` / MTEF | 公式内容、字号、间距、字体等 | 目标配置正确，公式仍可编辑，非目标数据不变 |
+| 显示预览 | `word/media/*.wmf` | Word 不启动 MathType 时显示的缓存图形 | 由修改后的 OLE 重新生成，映射无误 |
+| 页面几何 | `dxaOrig/dyaOrig`、VML 宽高、基线属性 | 预览在页面上的尺寸和位置 | 与新 WMF 的物理尺寸一致，基线不漂移 |
+
+这就是整个方案最重要的结论：
+
+> MTEF 已更新，不等于 Word 显示已更新；预览已替换，也不等于页面几何正确。
+
+只有三个层次分别通过验收，才能说公式真正“改好了”。
+
+---
+
+## 问题为什么比预想中更难
+
+最初的需求很直接：把文档中不符合目标 `.eqp` 的 MathType 公式批量规范化。
+
+在一个较小样本中，修补器成功把 3 个偏离目标的公式改为合规；每个对象只需修改 1 个字节，复审也从 3 个偏差降为 0。可是在 Word 中查看时，公式仍然保持旧外观。
+
+这个现象暴露了两个独立问题：
+
+- `.eqp` 应用到 MTEF，解决的是公式的可编辑配置；
+- Word 继续显示旧 WMF，说明缓存预览没有刷新。
+
+进一步检查又发现第三个问题：即使生成了新 WMF，如果仍沿用旧对象框，Word 会把新图压缩或拉伸回旧尺寸。于是，一个看似简单的“批量改配置”，最终必须成为一条跨越 MTEF、OLE、OOXML、WMF 和 VML 的完整流水线。
+
+---
+
+## 整体方案：七道门，而不是一个脚本
+
+完整流程如下：
+
+```text
+目标 EQP + 源 DOCX
+        │
+        ▼
+1. 预检：枚举公式并找出配置偏差
+        │
+        ▼
+2. 修补：只修改 Equation Native 中已验证的目标记录
+        │
+        ▼
+3. 证明：验证非目标部件、OLE 流和结构均未被破坏
+        │
+        ▼
+4. 映射：通过 OOXML 关系确定每个 OLE 对应的 WMF
+        │
+        ▼
+5. 去共享：必要时为每个公式建立独立预览
+        │
+        ▼
+6. 重渲染：通过 32 位 OLE 服务生成新的 WMF
+        │
+        ▼
+7. 几何同步与整页 QA
+```
+
+每一关都明确规定了输入、允许修改的范围、输出证据和失败条件。任何一步不能证明安全，就停止，而不是猜测后继续。
+
+### 1. 预检：先知道文档里有什么
+
+```powershell
+python .\find_deviating.py target.eqp source.docx `
+  --out .\work\source-mtef-audit.json
+```
+
+预检首先解析 `.eqp`，要求得到恰好 38 个数值：`[Sizes]` 中 8 项，`[Spacing]` 中 30 项。随后按 OOXML 关系枚举所有 `Equation.DSMT4` 对象，并逐个读取 OLE 中的 `Equation Native` 流。
+
+这里有一个容易遗漏的范围问题：公式不只存在于 `word/document.xml`。页眉、页脚、脚注、尾注等 Word XML 部件同样可能包含 OLE 对象，因此枚举必须覆盖所有相关 owner part，而不是只扫描正文。
+
+预检报告至少要说明：
+
+- 公式对象总数；
+- 对应的 owner part、关系 ID 和 OLE 部件；
+- 哪些公式无法解析；
+- 哪些数值或字体与目标 EQP 不一致。
+
+工具以退出码 `2` 表示“发现偏差”。在待修复文档中，这是预期结果，不应被误判为程序崩溃。
+
+### 2. 修补 MTEF：只改能够证明的目标
+
+```powershell
+python .\patch_mathtype_mtef.py target.eqp source.docx patched.docx `
+  --report .\work\mtef-patch-report.json
+```
+
+`Equation Native` 中的偏好配置位于 `EQN_PREFS` 记录。38 个数值采用半字节编码：单位、十进制数字、小数点和结束符被压缩为 nibble 序列。第 8 项之后，还有用于分隔字号和间距的 `1E`。
+
+困难不在“把 38 个值写进去”，而在于准确找到记录边界，并在长度发生变化时保持容器一致。
+
+安全修补遵循以下规则：
+
+1. 先解析 OLE2 复合文件，只读取具名的 `Equation Native` 流；
+2. 将 `12 00` 仅视为候选记录标记，不能见到这两个字节就修改；
+3. 从候选位置完整解析 38 项数值和分隔符；
+4. 重新编码目标值并替换旧偏好块；
+5. 对新流做一次完整回读，确认 38 项全部等于目标 EQP；
+6. 同步 MTEF 内部长度字段；
+7. 如果流跨越 64 字节 mini-sector 边界，同步 OLE mini-FAT 链、目录项长度和根 mini-stream 的逻辑长度。
+
+MathType 写出的 nibble 流还存在一种合法对齐变体：第 8 个数值结束在奇数半字节边界时，可能在 `1E` 前插入一个 `0`。解析器只接受已验证的两种形式：
+
+```text
+... F 1 E
+... F 0 1 E
+```
+
+这条限制看似保守，却很重要。二进制修补最危险的做法不是“不会改”，而是在边界不确定时仍然继续写。
+
+字体记录比数值块更脆弱，因为它们是带长度编码的旧代码页记录。当前实现只处理已经通过对照样本验证的精确漂移模式。遇到未知字体或未知记录结构，正确行为是报告并停止，而不是做全局字符串替换。
+
+### 3. 修补后证明：把“看起来能打开”升级为可审计结论
+
+```powershell
+python .\verify_mtef_patch.py target.eqp source.docx patched.docx `
+  --report .\work\mtef-patch-verification.json
+
+python .\find_deviating.py target.eqp patched.docx `
+  --out .\work\patched-mtef-audit.json
+```
+
+一个 DOCX 能被 Word 打开，并不能证明二进制修补正确。验证器要求同时满足：
+
+- 修补前后 ZIP 成员名和顺序一致；
+- 公式对象、owner part、关系 ID 和 OLE 目标映射一致；
+- 所有非目标 DOCX 部件逐字节相同；
+- 每个 OLE 中除 `Equation Native` 外的流逐字节相同；
+- 修改后的 MTEF 内部长度等于 `stream length - 28`；
+- 38 项配置和所需字体全部通过目标 EQP 审计；
+- ZIP CRC 校验通过。
+
+这里要区分两个时间点：
+
+- 从源文档到 MTEF 修补结果，目标 OLE 的整体哈希发生变化是正常的，因为 `Equation Native` 被有意修改；
+- 从修补结果到预览刷新结果，OLE 哈希必须保持不变，因为后半段只允许修改预览、关系和几何。
+
+这个区别避免了“全程 OLE 零改动”一类听起来漂亮、实际上自相矛盾的表述。
+
+### 4. 映射公式和预览：关系 ID 才是事实来源
+
+```powershell
+python .\ole-preview-bridge\map_equations.py `
+  patched.docx .\work\equation-map.json
+```
+
+不能根据文件名猜测 `oleObject17.bin` 对应 `image17.wmf`。Word 保存、复制或去重文档时可能重新编号，数字后缀没有可靠语义。
+
+正确做法是沿 OOXML 关系查找：从公式所在 XML 部件取得关系 ID，再解析对应的 `.rels`，分别确定 OLE 部件和预览部件。映射清单同时记录容器哈希与 `Equation Native` 哈希；后者才是稳定的公式内容标识，因为 Word 可能重写 OLE 容器元数据而不改变公式本身。
+
+### 5. 拆分共享预览：避免一张图覆盖多个公式
+
+多个公式对象可能引用同一个 WMF。若它们的内容不同，直接替换这张共享图片会让多个位置显示同一个公式。
+
+因此，当公式对象数大于唯一预览部件数时，必须先拆分共享关系：
+
+```powershell
+python .\ole-preview-bridge\split_shared_previews.py `
+  patched.docx .\work\equation-map.json unique-preview-source.docx
+
+python .\ole-preview-bridge\map_equations.py `
+  unique-preview-source.docx .\work\unique-equation-map.json
+
+python .\ole-preview-bridge\verify_equation_map.py `
+  unique-preview-source.docx .\work\unique-equation-map.json
+```
+
+在 5,758 个公式对象的实测文档中，共发现 74 组共享预览；其中 3 组涉及 13 个内容不同的公式对象。拆分后，每个对象拥有独立的预览关系，后续替换才具备确定性。
+
+### 6. 用 32 位 OLE 服务重新生成 WMF
+
+MathType 的 `Equation.DSMT4` OLE 服务端是 32 位组件。64 位 Python 不能直接加载它，因此流水线使用一个小型 x86 STA Worker 负责 OLE 调用。
+
+每台机器首次使用或 Worker 源码变更后，先构建渲染器：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  .\ole-preview-bridge\build_renderer32.ps1
+```
+
+然后批量刷新：
+
+```powershell
+python .\ole-preview-bridge\refresh_previews.py `
+  unique-preview-source.docx refreshed.docx `
+  --manifest .\work\unique-equation-map.json `
+  --renderer .\ole-preview-bridge\renderer32\OlePreviewRenderer.exe `
+  --cache .\cache `
+  --batch-size 25
+```
+
+Worker 对每个唯一公式执行的关键调用是：
+
+```text
+StgOpenStorage
+  → OleLoad
+  → OleRun
+  → IOleObject.Update
+  → 读取 CF_METAFILEPICT
+  → IOleObject.Close(OLECLOSE_NOSAVE)
+```
+
+最后一步不是清理细节，而是稳定性的必要条件。早期实现没有显式关闭 OLE 对象，第 11 个唯一公式便在 `OleRun` 返回 `0x8007000E`。加入 `IOleObject.Close` 后，同一个 Worker 可以连续处理公式；再配合默认每 25 次缓存未命中重启一次，MathType 服务端的内存占用得到可控释放。
+
+缓存键由 `Equation Native` 内容哈希和渲染器版本哈希组成。这样，相同公式只需渲染一次；渲染器代码变化后，旧缓存也会自动失效。
+
+### 7. 同步几何，并检查整份文档
+
+新 WMF 的 placeable header 给出了边界框和 units-per-inch。由此可以换算出公式的物理宽高，再同步 Word 的对象尺寸：
+
+```text
+dxaOrig / dyaOrig = 物理尺寸（pt）× 20
+VML width / height = 按 Word/MathType 实际行为量化后的 pt 尺寸
+```
+
+当前实现按 0.75 pt 网格量化 VML 尺寸，同时保留原有 `w:position`，只调整大小，不擅自改变公式基线。
+
+```powershell
+python .\ole-preview-bridge\audit_geometry.py refreshed.docx
+```
+
+几何审计要求：
+
+- 所有 WMF 均可解析；
+- 每个公式都有合法的 VML 尺寸；
+- VML 和 `dxaOrig/dyaOrig` 与 WMF 物理尺寸一致；
+- 预览刷新阶段的 OLE 哈希保持不变；
+- DOCX 的 ZIP CRC 通过。
+
+结构审计通过后，还必须渲染整份文档并逐页检查。需要关注的不是“文档能否打开”，而是公式是否消失、拉伸、压扁、裁剪、重叠，基线是否漂移，以及分页是否发生意外变化。
+
+程序验证擅长证明结构一致，人眼检查擅长发现页面异常。两者不能互相替代。
+
+---
+
+## 实测结果：性能之外，更重要的是证据链
+
+在 M19 全量文档上的记录如下：
+
+| 指标 | 结果 |
+| --- | ---: |
+| 公式对象 | 5,758 |
+| 唯一 `Equation Native` | 5,326 |
+| 新渲染 | 5,208 |
+| 缓存命中 | 118 |
+| Worker 启动/重启 | 209 次 |
+| 串行渲染耗时 | 445.01 秒（约 7.4 分钟） |
+| 替换预览 | 5,758 |
+| 更新几何对象 | 5,758 |
+| 预览阶段保持不变的 OLE | 5,758 |
+
+这些数字需要按阶段解释：
+
+- “预览阶段保持不变的 OLE 为 5,758”表示刷新 WMF 和几何时，没有再次改动已经修补好的 OLE；
+- 它不表示源文档到最终文档的 OLE 完全没变；前面的 MTEF 修补正是有意修改 `Equation Native`；
+- 5,326 个唯一内容中有 118 个已有可信缓存，因此实际新渲染 5,208 个；
+- 5,758 个对象仍全部获得了对应的预览替换和几何更新。
+
+最终验收不是一条“成功”日志，而是一组互相独立的结论：MTEF 偏差归零，非目标部件保持不变，预览映射有效，几何审计无失败，整页渲染未见公式缺失、变形、裁剪或异常分页。
+
+---
+
+## 为什么没有选择 Word 宏
+
+最初考虑过让 Word 打开整篇文档，再通过 MathType 宏批量套用偏好。这个方案的问题并非“宏不够优雅”，而是它把处理绑定在完整 Word UI、MathType 插件初始化和长时间进程状态上：
+
+- 5,758 个 OLE 对象逐个激活，启动和保存成本很高；
+- 64 位 Word 与 32 位 MathType 组件之间存在额外兼容问题；
+- `MathPage.wll`、`MTInitAPI` 和旧接口的中文路径支持都可能成为失败点；
+- 长时间运行需要处理 Word 与 MathType 的内存累积和中途保存。
+- 最重要的是，经过测试，老板的顶配电脑渲染起来，也就1、2S/公式，普通的办公电脑不仅缓慢，内容占用累计过高极其容易闪退。
+
+直接处理 DOCX 包，并只把“生成 WMF”这一步交给 32 位 OLE Worker，缩小了需要依赖外部应用状态的范围。它也让每个阶段都能单独审计：二进制修补失败不会污染预览，预览失败也不会回头改动 OLE。
+
+
+---
+
+## 适用边界
+
+这条流水线适用于：
+
+- `.docx` 文档；
+- 可编辑的 `Equation.DSMT4` OLE 公式；
+- 含 8 项 `[Sizes]`、30 项 `[Spacing]` 的受支持 `.eqp`；
+- 已安装并注册 MathType 32 位 OLE 服务端的 Windows 环境。
+
+它不适用于：
+
+- 静态 PNG、EMF 等图片公式；
+- Office 原生 OMML 公式；
+- 修改公式的数学内容；
+- 未经对照验证的新字体记录或未知 MTEF 变体；
+- 没有 MathType OLE 服务端的环境。
+
+如果遇到未知字体、无法解析的偏好记录、mini-stream 安全容量不足或不受支持的边界条件，流水线会停止。拒绝猜测不是功能缺失，而是二进制修补的安全边界。
+
+---
+
+## 一键运行与可复现交付
+
+完整流程已经封装为一个入口：
+
+```powershell
+python .\run_full_pipeline.py target.eqp source.docx refreshed.docx `
+  --work-dir .\work\job-name `
+  --cache .\cache `
+  --batch-size 25
+```
+
+工具默认写入新的 DOCX，拒绝让源文件和输出文件指向同一路径。只有得到明确授权时，才应使用 `--overwrite` 覆盖已有输出。
+
+工作目录会保留各阶段 JSON 报告，包括源文档审计、修补报告、修补完整性证明、映射与预览刷新报告。一次合格交付至少应报告：
+
+- 使用的 EQP；
+- 公式对象数和唯一公式数；
+- 修改与未修改的 MTEF 数量；
+- 共享预览拆分数量；
+- 新渲染数和缓存命中数；
+- 几何审计结果；
+- 预览阶段 OLE 保持结果；
+- 整页视觉 QA 状态。
+
+---
+
+## 结论
+
+批量修复 MathType 公式的核心，不是找到一段神奇的替换代码，而是把一个模糊目标拆成三个可验收的问题：
+
+1. MTEF 配置是否正确；
+2. WMF 预览是否来自修改后的公式；
+3. Word 几何是否与新预览一致。
+
+这套方案最值得复用的也不是某个 OLE 调用，而是一种工程方法：先建立数据模型，再限定每一步允许修改的范围，最后用结构审计、哈希和整页渲染分别证明结果。
+
+当处理对象是几千个可编辑公式时，“看起来成功”远远不够。真正可靠的自动化，应当能说明它改了什么、为什么这样改，以及哪些东西可以证明从未被碰过。
+
+---
+
+项目目录：`C:\MXQwork\skills\mathtype-re-render`
+
+关键资料：`SKILL.md`、`README.md`、`references/mtef-binary-patching.md`
