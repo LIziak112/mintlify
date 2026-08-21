@@ -16,22 +16,6 @@
           {
             "group": "Welcome",
             "pages": ["introduction"]
-          },
-          {
-            "group": "Thoughts & Essays",
-            "pages": [
-              "blog/thinking-about-thinking",
-              "blog/on-learning",
-              "blog/on-creativity",
-              "blog/on-technology"
-            ]
-          },
-          {
-            "group": "Reading Notes",
-            "pages": [
-              "blog/reading-notes-overview",
-              "blog/book-notes"
-            ]
           }
         ]
       },
