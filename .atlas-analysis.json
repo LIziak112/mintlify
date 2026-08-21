@@ -1,13 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
+  "projectType": "general",
+  "projectName": "个人博客 · Personal Blog",
+  "projectDescription": "A personal blog sharing original thoughts, essays, and self-built tools.",
   "theme": "willow",
-  "name": "MX Quan",
-  "colors": {
-    "primary": "#ef7025",
-    "light": "#eec9bc",
-    "dark": "#4fa1ab"
-  },
-  "favicon": "/favicon.svg",
+  "primaryColor": "#ef7025",
+  "lightColor": "#eec9bc",
+  "darkColor": "#4fa1ab",
   "navigation": {
     "tabs": [
       {
@@ -57,16 +55,11 @@
       }
     ]
   },
-  "navbar": {
-    "primary": {
-      "type": "button",
-      "label": "About Me",
-      "href": "/introduction"
-    }
-  },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/mx-quan"
-    }
-  }
+  "keyFeatures": [
+    "Personal essays and reflections on thinking, learning, and technology",
+    "Reading notes and book summaries",
+    "Self-built utility tools with usage guides",
+    "Clean, minimal reading experience"
+  ],
+  "publicApiSurface": []
 }

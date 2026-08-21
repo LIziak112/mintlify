@@ -1,0 +1,69 @@
+---
+title: "Data Formatter: Convert JSON, CSV, and YAML Effortlessly"
+sidebarTitle: "Data Formatter"
+description: "The Data Formatter converts data between JSON, CSV, and YAML formats with automatic validation, making it easy to inspect and transform structured data."
+---
+
+Working with structured data means constantly switching between formats — an API hands you JSON, a spreadsheet expects CSV, a configuration file wants YAML. Manually converting between them is tedious and error-prone. The Data Formatter handles that translation in one click, with automatic validation so you know immediately if something is wrong with your input. It's particularly handy when debugging API responses, preparing test fixtures, or just trying to read a deeply nested JSON blob in a more human-friendly shape.
+
+## Supported Formats
+
+The tool converts between these format pairs in both directions:
+
+- **JSON ↔ YAML** — ideal for converting API payloads into readable configuration files and back
+- **JSON ↔ CSV** — turns arrays of objects into tabular rows, or flat CSV data into structured JSON
+- **YAML ↔ CSV** — useful when moving data between configuration and spreadsheet contexts
+
+The input format is detected automatically — you don't need to tell the tool what you pasted. If detection is ambiguous (for example, a single unquoted string is technically valid YAML), the tool will note what it assumed and let you override it.
+
+## How to Use
+
+<Steps>
+  <Step title="Paste your data">
+    Click into the input field and paste the data you want to convert. The tool will auto-detect the format and display a small badge confirming what it recognised.
+  </Step>
+  <Step title="Choose the target format">
+    Use the format dropdown to select your desired output: JSON, CSV, or YAML.
+  </Step>
+  <Step title="Click Convert">
+    Hit the Convert button to run the transformation. The formatted result appears in the output panel immediately.
+  </Step>
+  <Step title="Copy or download the result">
+    Use the copy button to grab the output to your clipboard, or click Download to save it as a file with the correct extension (`.json`, `.csv`, or `.yaml`).
+  </Step>
+</Steps>
+
+## Example
+
+<CodeGroup>
+  ```json JSON Input
+  [
+    { "name": "Alice", "age": 31, "city": "Berlin" },
+    { "name": "Bob",   "age": 25, "city": "Tokyo"  },
+    { "name": "Clara", "age": 28, "city": "Nairobi" }
+  ]
+  ```
+
+  ```csv CSV Output
+  name,age,city
+  Alice,31,Berlin
+  Bob,25,Tokyo
+  Clara,28,Nairobi
+  ```
+</CodeGroup>
+
+## Validation
+
+Before converting, the tool parses your input and checks it for structural errors. If the data is malformed, the conversion is stopped and a clear error message is shown pointing you to the exact location of the problem — so you can fix it without guessing.
+
+<Warning>
+  **Invalid JSON: Unexpected token at line 3, column 12**
+
+  This typically means a trailing comma, mismatched bracket, or unquoted string. Check the highlighted line in the input panel for the exact issue.
+</Warning>
+
+Validation catches the most common mistakes: missing commas, unclosed brackets, wrong quotation marks in JSON; inconsistent indentation in YAML; and mismatched column counts in CSV.
+
+## Technical Notes
+
+Like all tools on this site, the Data Formatter runs entirely in your browser. No data leaves your device at any point — there is no backend, no analytics on your input, and no network request triggered by the conversion. It works offline once the page has been loaded.
