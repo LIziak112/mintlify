@@ -15,33 +15,34 @@
         "groups": [
           {
             "group": "欢迎",
-            "pages": ["introduction"]
-          },
-          {
-            "group": "Word 排版",
             "pages": [
-              "blog/word-format-skill",
-              "blog/word-format-refactor"
+              "introduction"
             ]
           },
           {
-            "group": "MathType",
+            "group": "思考",
             "pages": [
-              "blog/mathtype-re-render-skill",
-              "blog/mathtype-re-render",
-              "blog/mathtype-batch-formatting"
+              "blog/ai-era-education-company",
+              "blog/ai-era-teacher-ip",
+              "blog/xiebinbin-demo"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "工具",
-        "groups": [
+          },
           {
-            "group": "Skills",
+            "group": "skill 实践",
             "pages": [
               "tools/overview",
-              "tools/skills"
+              "blog/word-format-skill",
+              "blog/mathtype-re-render-skill",
+              "tools/skills",
+              {
+                "group": "原理与复盘",
+                "expanded": false,
+                "pages": [
+                  "blog/word-format-refactor",
+                  "blog/mathtype-re-render",
+                  "blog/mathtype-batch-formatting"
+                ]
+              }
             ]
           }
         ]
@@ -51,8 +52,8 @@
   "navbar": {
     "primary": {
       "type": "button",
-      "label": "关于",
-      "href": "/introduction"
+      "label": "安装 skill",
+      "href": "/tools/skills"
     }
   },
   "footer": {

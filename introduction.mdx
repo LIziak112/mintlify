@@ -1,39 +1,32 @@
 ---
-title: "关于本站"
-sidebarTitle: "关于"
-description: "MX Quan 的 Word / MathType 自动化笔记：为什么写这些 skill，以及如何阅读本站文档。"
+title: "欢迎"
+sidebarTitle: "欢迎"
+description: "关于 AI 与教育的思考，以及 Word 排版、MathType 公式处理的 skill 实践。"
 ---
 
-本站不再保留通用英文随笔模板，只围绕真实工作里反复出现的两类问题：
+欢迎来到 MX Quan 的博客。这里记录我对 **AI 与教育**的思考，也分享在实际工作中打磨的**自动化工具与方法**。
 
-1. **Word 双栏习题册**要统一版式，又不能把 MathType 公式弄成图片  
-2. **MathType 公式**要批量套用 `.eqp`，还要让 Word 里看见的预览一起更新  
+你可以从感兴趣的文章读起，也可以直接找到能帮你解决问题的 skill。
 
-对应产物是两个可安装 skill，以及若干把设计取舍写清楚的中文技术文。
+## 思考
 
-## 你会在这里找到什么
+当 AI 越来越擅长提供知识和答案，教育机构与教师还能创造什么价值？这一组文章从这些问题出发，逐步走向具体的产品尝试。
+
+- [AI 时代教辅机构的思考](/blog/ai-era-education-company)：教育服务的价值、机构的方向与长期积累。
+- [AI 时代，考研教师 IP 的价值是什么](/blog/ai-era-teacher-ip)：信任、学习方法，以及对学习过程的支持。
+- [英语做题方法 Demo](/blog/xiebinbin-demo)：把教学方法拆成步骤，尝试用工具帮助学生练习与复盘。
+
+## skill 实践
+
+skill 是可以安装给 AI 助手使用的能力包。这里的两个 skill 来自教辅文档处理：一个负责 Word 版式，一个负责 MathType 公式。相关文章也记录了实现过程和踩过的坑。
 
 <CardGroup cols={2}>
-  <Card title="Skills 安装" icon="download" href="/tools/skills" type="tip">
-    Agent 一键安装与 zip 下载入口。
+  <Card title="Word 排版" icon="file-word" href="/blog/word-format-skill">
+    参照模板统一习题册的页面、分栏与段落样式，保留可编辑的公式。
   </Card>
-  <Card title="使用说明" icon="book" href="/blog/word-format-skill" type="note">
-    每个 skill 的适用边界、提示词和命令。
-  </Card>
-  <Card title="工程实录" icon="screwdriver-wrench" href="/blog/word-format-refactor" type="info">
-    为什么从 HTML 重建改成 OOXML 定点修改。
-  </Card>
-  <Card title="公式深潜" icon="atom" href="/blog/mathtype-re-render" type="check">
-    MTEF、WMF、几何三层如何分别验收。
+  <Card title="MathType 公式处理" icon="square-root-variable" href="/blog/mathtype-re-render-skill">
+    批量统一公式字体、字号与间距，让 Word 中的显示同步更新。
   </Card>
 </CardGroup>
 
-## 怎么读
-
-- 只想马上用：看 [工具总览](/tools/overview) → [安装页](/tools/skills)  
-- 想理解失败模式：先读重构实录与 Re-render 技术文，再回头看脚本门槛  
-- 源码与脚本：仓库 `skills/`，下载包在 `/downloads/`
-
-<Note>
-  这些流水线依赖 Windows、桌面版 Word，以及（公式侧）已注册的 MathType 32 位 OLE。它们不是浏览器小工具。
-</Note>
+不知道选哪个，可以先看 [skill 总览](/tools/overview)；准备动手时，查看 [安装与使用](/tools/skills)。想了解实现细节，可以继续阅读侧边栏的 **原理与复盘**。

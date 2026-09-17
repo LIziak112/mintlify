@@ -1,51 +1,36 @@
 ---
-title: "工具总览"
-sidebarTitle: "总览"
-description: "Word 排版与 MathType 公式批处理 skill：安装方式、适用场景，以及相关技术博客入口。"
+title: "skill 总览"
+sidebarTitle: "总览与选择"
+description: "根据你的文档处理需求，选择 Word 排版或 MathType 公式处理 skill，并找到使用说明与技术文章。"
 ---
 
-本站工具以 **Agent Skill** 形式分发，不是网页里点一点的小工具。你需要把 skill 装进 Cursor / Claude / Codex 等环境，或下载 zip 后在本机跑脚本。
+这里整理了两个用于教辅文档处理的 skill。你可以把它们安装给 AI 助手，用自然语言描述任务，也可以下载脚本在本机运行。
 
-## Skills
+## 按需求选择
 
 <CardGroup cols={2}>
-  <Card title="安装与使用" href="/tools/skills" icon="download">
-    `npx skills add` 或下载完整 zip。
+  <Card title="Word 排版" href="/blog/word-format-skill" icon="file-word">
+    参照已有模板，统一习题册的页面、分栏、段落与题型样式，并保留可编辑的 MathType 公式。对应 `word-format`。
   </Card>
-  <Card title="word-format" href="/blog/word-format-skill" icon="file-word">
-    双栏习题册版式迁移，保留可编辑 MathType OLE。
-  </Card>
-  <Card title="mathtype-re-render" href="/blog/mathtype-re-render-skill" icon="square-root-variable">
-    `.eqp` → MTEF 修补 → WMF 重渲染 → 几何同步。
+  <Card title="MathType 公式处理" href="/blog/mathtype-re-render-skill" icon="square-root-variable">
+    批量应用公式格式配置，统一字体、字号与间距，同时更新 Word 中的公式预览。对应 `mathtype-re-render`。
   </Card>
 </CardGroup>
 
-## 什么时候用哪个
+如果版式和公式都需要调整，可以分两步处理，分别检查排版效果和公式显示。
 
-| 你要做的事 | 用哪个 |
-| --- | --- |
-| 统一页面、分栏、题型样式、解析加粗 | [word-format](/blog/word-format-skill) |
-| 统一公式字号、间距、字体，并刷新显示 | [mathtype-re-render](/blog/mathtype-re-render-skill) |
-| 两者都要 | 先版式后公式，或按文档状态分步跑 |
+## 开始使用
 
-<Warning>
-  不要用 HTML / `python-docx` 去「重建」含大量 `Equation.DSMT4` 的整篇习题册。公式会退化成图片，看起来还「正常」。
-</Warning>
-
-## 技术文章
-
-<CardGroup cols={2}>
-  <Card title="排版重构实录" href="/blog/word-format-refactor" icon="book">
-    从 HTML 剪贴板方案到 OOXML 定点修改。
-  </Card>
-  <Card title="Re-render 深潜" href="/blog/mathtype-re-render" icon="microscope">
-    三层数据模型与可审计流水线。
-  </Card>
-  <Card title="官方批量格式化" href="/blog/mathtype-batch-formatting" icon="clock">
-    MathType 自带批量格式化为什么慢。
-  </Card>
-</CardGroup>
+先阅读对应 skill 的使用说明，了解需要准备的文档与适用范围，再按 [安装与使用](/tools/skills) 完成安装或下载。
 
 <Note>
-  源码在 [GitHub](https://github.com/LIziak112/mintlify) 的 `skills/`；zip 在 [`/downloads/`](/tools/skills)。
+  这些 skill 在本机处理文档。使用前需要准备 Windows 环境；Word 排版依赖桌面版 Word，公式处理依赖已注册的 MathType 32 位 OLE。完整要求见安装页。
 </Note>
+
+## 原理与复盘
+
+如果你想了解方案背后的取舍，可以继续读：
+
+- [Word 排版重构实录](/blog/word-format-refactor)：如何在调整版式时保留可编辑公式。
+- [MathType 公式重渲染](/blog/mathtype-re-render)：为什么修改公式配置后，还需要更新预览与显示尺寸。
+- [MathType 批量格式化为什么慢](/blog/mathtype-batch-formatting)：理解官方功能的处理过程与性能限制。
